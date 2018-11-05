@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: $USER-pod
+spec:
+  containers:
+  - name: $USER-container
+    image: robcurrie/tensorflow-gpu
+    env:
+      - name: AWS_PROFILE
+        value: "prp"
+      - name: AWS_S3_ENDPOINT
+        value: "http://rook-ceph-rgw-rooks3.rook"
+      - name: S3_ENDPOINT
+        value: "rook-ceph-rgw-rooks3.rook"
+      - name: S3_USE_HTTPS
+        value: "0"
+    args: ["sleep", "infinity"]
+    volumeMounts:
+      - mountPath: /root/.aws
+        name: credentials
+    resources:
+      requests:
+        memory: "8Gi"
+        nvidia.com/gpu: 1
+      limits:
+        memory: "16Gi"
+        nvidia.com/gpu: 1
+  restartPolicy: Never
+  volumes:
+  - name: credentials
+    secret:
+      secretName: s3-credentials

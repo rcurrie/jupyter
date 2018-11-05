@@ -1,0 +1,12 @@
+awscli
+boto3
+matplotlib
+numpy
+pandas
+requests
+scikit-learn
+scipy
+seaborn
+shap
+sklearn
+tables
