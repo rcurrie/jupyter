@@ -1,9 +1,9 @@
-FROM tensorflow/tensorflow:1.12.0-rc2-devel-py3
+FROM tensorflow/tensorflow:1.12.0-devel-py3
 
 # Build for local machine architecture (so we work with or without AVX)
 WORKDIR /tensorflow
 RUN ./configure && \
-	bazel build --jobs 6 --config=opt //tensorflow/tools/pip_package:build_pip_package
+	bazel build --jobs 8 --config=opt //tensorflow/tools/pip_package:build_pip_package
 RUN bazel-bin/tensorflow/tools/pip_package/build_pip_package /root
 
 WORKDIR /root

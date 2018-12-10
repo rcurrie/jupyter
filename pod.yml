@@ -7,6 +7,8 @@ spec:
   - name: $USER-container
     image: robcurrie/tensorflow-gpu
     env:
+      - name: USER
+        value: $USER
       - name: AWS_PROFILE
         value: "prp"
       - name: AWS_S3_ENDPOINT
@@ -24,7 +26,7 @@ spec:
         memory: "8Gi"
         nvidia.com/gpu: 1
       limits:
-        memory: "16Gi"
+        memory: "8Gi"
         nvidia.com/gpu: 1
   restartPolicy: Never
   volumes:

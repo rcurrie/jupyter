@@ -1,5 +1,4 @@
-PROJECT = $(dir $(NOTEBOOK))
-FILE = $(notdir $(NOTEBOOK).ipynb)
+# See https://jupyter-notebook.readthedocs.io/en/stable/public_server.html
 JUPYTER_PASSWORD ?= "sha1:53987e611ec3:1a90d791daf75274c73f62f672ecfa935799bdee"
 
 generate-ca:
@@ -52,6 +51,7 @@ jupyter:
 	# access to S3
 	docker run --rm -it --name $(USER)-jupyter \
 		--user=`id -u`:`id -g` \
+		-e USER=$(USER) \
 		-e DEBUG=True \
 		-e AWS_PROFILE="prp" \
     -e AWS_S3_ENDPOINT="https://s3.nautilus.optiputer.net" \
@@ -67,17 +67,12 @@ jupyter:
 			--ip 0.0.0.0 \
 			--NotebookApp.password=$(JUPYTER_PASSWORD)
 
-run:
-	# Run a notebook on the command line with no timeout
-	jupyter nbconvert --ExecutePreprocessor.timeout=None --to notebook \
-		--execute $(NOTEBOOK).ipynb  --output $(NOTEBOOK).ipynb
-
 update-secrets:
 	# Update secrets from our AWS file so we can access S3 in k8s
 	kubectl delete secrets/s3-credentials
 	kubectl create secret generic s3-credentials --from-file=../.aws/credentials
 
-train: create-pod run-on-pod delete-pod
+run: create-pod run-python-on-pod delete-pod
 
 list-pods:
 	# List all pods
@@ -97,24 +92,38 @@ delete-pod:
 	envsubst < pod.yml | kubectl delete -f -
 	kubectl wait --for=delete pod/$(USER)-pod --timeout=5m
 
+monitor:
+	# Run nvidia monitor in a loop to monitor GPU usage
+	kubectl exec -it $(USER)-pod -- nvidia-smi --loop=5
+
 shell:
 	# Open a shell on the pod
 	kubectl exec -it $(USER)-pod /bin/bash
 
-# run:
-# 	# Run a long running notebook on the command line inside jupyter
-# 	kubectl cp $(NOTEBOOK).ipynb $(USER)-pod:/root/data/notebooks
-# 	jupyter nbconvert --ExecutePreprocessor.timeout=None --to notebook \
-# 		--execute $(NOTEBOOK).ipynb  --output $(NOTEBOOK).ipynb
+run-notebook:
+	# Run a notebook on the command line with no timeout inside the local jupyter instance
+	docker exec -it -e DEBUG=False $(USER)-jupyter \
+		jupyter nbconvert --ExecutePreprocessor.timeout=None --to notebook \
+			--execute $(NOTEBOOK).ipynb --output $(notdir $(NOTEBOOK)).ipynb
 
-run-on-pod:
-	# Convert notbook to .py, run on pod, backhaul model
-	kubectl cp $(PROJECT)$(FILE) $(USER)-pod:/notebooks
+run-notebook-on-pod:
+	# Run a long running notebook on the command line inside jupyter
+	# NOTE: You will not see any print() output, converting to .py below
+	# may be better
+	kubectl cp ~/$(NOTEBOOK).ipynb $(USER)-pod:/notebooks
 	kubectl exec -it $(USER)-pod -- \
-		jupyter nbconvert --to python --output /notebooks/$(FILE).py /notebooks/$(FILE)
+		jupyter nbconvert --ExecutePreprocessor.timeout=None --to notebook \
+			--execute $(notdir $(NOTEBOOK)).ipynb  --output $(notdir $(NOTEBOOK)).ipynb
+	kubectl cp $(USER)-pod:/notebooks/$(notdir $(NOTEBOOK)).ipynb ~/$(NOTEBOOK).ipynb
+
+run-python-on-pod:
+	# Convert notbook to .py, run on pod, backhaul model
+	kubectl cp ~/$(NOTEBOOK).ipynb $(USER)-pod:/notebooks
+	kubectl exec -it $(USER)-pod -- \
+		jupyter nbconvert --to python \
+			--output /notebooks/$(notdir $(NOTEBOOK)).py /notebooks/$(notdir $(NOTEBOOK)).ipynb
 	time kubectl exec -it $(USER)-pod -- bash -c 'cd /notebooks && \
-		python3 $(FILE).py 2>&1 | tee log.txt'
-	# kubectl cp $(USER)-pod:/notebooks/models ./models
+		python3 $(notdir $(NOTEBOOK)).py 2>&1 | tee log.txt'
 
 create-job:
 	envsubst < job.yml | kubectl create -f -

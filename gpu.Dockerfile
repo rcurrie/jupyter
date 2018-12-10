@@ -1,4 +1,4 @@
-FROM tensorflow/tensorflow:1.12.0-rc2-gpu-py3
+FROM tensorflow/tensorflow:1.12.0-gpu-py3
 
 RUN apt-get update -y && apt-get install -y --no-install-recommends \
     git wget vim \
