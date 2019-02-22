@@ -1,6 +1,3 @@
-# See https://jupyter-notebook.readthedocs.io/en/stable/public_server.html
-JUPYTER_PASSWORD ?= "sha1:53987e611ec3:1a90d791daf75274c73f62f672ecfa935799bdee"
-
 generate-ca:
 	# See https://juno.sh/ssl-self-signed-cert/
 	# wget https://juno.sh/assets/openssl.cnf
@@ -51,20 +48,20 @@ jupyter:
 	# access to S3
 	docker run --rm -it --name $(USER)-jupyter \
 		--user=`id -u`:`id -g` \
-		-e USER=$(USER) \
+		--network=$(USER)-network \
 		-e DEBUG=True \
 		-e AWS_PROFILE="prp" \
     -e AWS_S3_ENDPOINT="https://s3.nautilus.optiputer.net" \
     -e S3_ENDPOINT="s3.nautilus.optiputer.net" \
 		-p 52820:8888 \
-		-p 52821:6006 \
-		-v `readlink -f ~`:/notebooks \
-		-v `readlink -f ~/data`:/notebooks/data \
+		-v `readlink -f ~`:/home/jovyan \
+		-v `readlink -f ~/data`:/home/jovyan/data \
+		-v /public/groups/braingeneers:/public/groups/braingeneers \
 		--shm-size=64G --memory=128G --cpus="8" \
-		$(USER)-jupyter:latest jupyter notebook \
-			--certfile /notebooks/jupyter/ssl/certs/ssl.cert.pem \
-			--keyfile /notebooks/jupyter/ssl/private/ssl.key.pem \
-			--ip 0.0.0.0 \
+		$(USER)-jupyter:latest start-notebook.sh \
+			--NotebookApp.certfile=/home/jovyan/jupyter/ssl/certs/ssl.cert.pem \
+			--NotebookApp.keyfile=/home/jovyan/jupyter/ssl/private/ssl.key.pem \
+			--ip=0.0.0.0 \
 			--NotebookApp.password=$(JUPYTER_PASSWORD)
 
 update-secrets:
