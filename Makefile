@@ -67,7 +67,7 @@ jupyter:
 update-secrets:
 	# Update secrets from our AWS file so we can access S3 in k8s
 	kubectl delete secrets/s3-credentials
-	kubectl create secret generic s3-credentials --from-file=../.aws/credentials
+	kubectl create secret generic s3-credentials --from-file=../.aws/prp-credentials
 
 run: create-pod run-python-on-pod delete-pod
 
@@ -125,5 +125,18 @@ run-python-on-pod:
 create-job:
 	envsubst < job.yml | kubectl create -f -
 
-job-down:
+delete-job:
 	envsubst < job.yml | kubectl delete -f -
+
+log-job:
+	kubectl logs job/$(USER)-job
+
+run-notebook-in-job:
+	aws --profile prp --endpoint https://s3.nautilus.optiputer.net \
+		s3 cp ~/$(NOTEBOOK).ipynb s3://braingeneers/$(USER)/$(NOTEBOOK).ipynb
+	envsubst < job.yml | kubectl create -f -
+	kubectl wait --for=condition=complete job/rcurrie-job
+	aws --profile prp --endpoint https://s3.nautilus.optiputer.net \
+		s3 cp s3://braingeneers/$(USER)/$(NOTEBOOK).ipynb  ~/$(NOTEBOOK).ipynb
+	kubectl logs job/$(USER)-job
+

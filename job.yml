@@ -1,22 +1,47 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: train
+  name: $USER-job
 spec:
+  backoffLimit: 0
   template:
     spec:
       containers:
       - name: train
-        image: tensorflow/tensorflow:latest-gpu-py3
-        command: ["ls", "/storage"]
+        image: robcurrie/tensorflow-gpu
+        env:
+          - name: USER
+            value: $USER
+          - name: AWS_PROFILE
+            value: "prp"
+          - name: AWS_S3_ENDPOINT
+            value: "http://rook-ceph-rgw-rooks3.rook"
+          - name: S3_ENDPOINT
+            value: "rook-ceph-rgw-rooks3.rook"
+          - name: S3_USE_HTTPS
+            value: "0"
         volumeMounts:
-        - mountPath: /data
-          name: data
+          - mountPath: /root/.aws
+            name: credentials
         resources:
+          requests:
+            memory: "8Gi"
+            nvidia.com/gpu: 0
           limits:
-            nvidia.com/gpu: 1
+            memory: "8Gi"
+            nvidia.com/gpu: 0
+        command: ["/bin/bash","-c"]
+        args: [
+          "
+          echo $(basename $NOTEBOOK.ipynb) &&
+          aws --endpoint http://rook-ceph-rgw-rooks3.rook s3 cp s3://braingeneers/$USER/$NOTEBOOK.ipynb . && 
+          jupyter nbconvert --ExecutePreprocessor.timeout=None --to notebook --execute $(basename $NOTEBOOK).ipynb  --output $(basename $NOTEBOOK).ipynb &&
+          aws --endpoint http://rook-ceph-rgw-rooks3.rook s3 cp $(basename $NOTEBOOK).ipynb s3://braingeneers/$USER/$NOTEBOOK.ipynb 
+          "
+        ]
+
       restartPolicy: Never
       volumes:
-        - name: data
-          persistentVolumeClaim:
-            claimName: $USER-data
+      - name: credentials
+        secret:
+          secretName: s3-credentials
