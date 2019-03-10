@@ -5,7 +5,7 @@ metadata:
 spec:
   containers:
   - name: $USER-container
-    image: robcurrie/tensorflow-gpu
+    image: robcurrie/jupyter-gpu
     env:
       - name: USER
         value: $USER
@@ -24,10 +24,10 @@ spec:
     resources:
       requests:
         memory: "16Gi"
-        nvidia.com/gpu: 1
+        nvidia.com/gpu: 0
       limits:
         memory: "16Gi"
-        nvidia.com/gpu: 1
+        nvidia.com/gpu: 0
   restartPolicy: Never
   volumes:
   - name: credentials

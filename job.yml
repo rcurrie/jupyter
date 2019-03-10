@@ -1,14 +1,17 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: $USER-job
+  name: job
 spec:
   backoffLimit: 0
   template:
     spec:
       containers:
-      - name: train
-        image: robcurrie/tensorflow-gpu
+      - name: run-notebook
+        image: robcurrie/jupyter-gpu
+        imagePullPolicy: Always
+        # securityContext:
+        #   runAsUser: 1000
         env:
           - name: USER
             value: $USER
@@ -33,10 +36,10 @@ spec:
         command: ["/bin/bash","-c"]
         args: [
           "
-          echo $(basename $NOTEBOOK.ipynb) &&
-          aws --endpoint http://rook-ceph-rgw-rooks3.rook s3 cp s3://braingeneers/$USER/$NOTEBOOK.ipynb . && 
-          jupyter nbconvert --ExecutePreprocessor.timeout=None --to notebook --execute $(basename $NOTEBOOK).ipynb  --output $(basename $NOTEBOOK).ipynb &&
-          aws --endpoint http://rook-ceph-rgw-rooks3.rook s3 cp $(basename $NOTEBOOK).ipynb s3://braingeneers/$USER/$NOTEBOOK.ipynb 
+          pwd &&
+          ls &&
+          aws --endpoint http://rook-ceph-rgw-rooks3.rook s3 ls s3://braingeneers/rcurrie/ &&
+          for i in {1..10}; do echo $i && sleep 2; done
           "
         ]
 
