@@ -3,7 +3,7 @@ build:
 	docker build -f cpu.Dockerfile -t $(USER)-jupyter .
 	docker tag $(USER)-jupyter robcurrie/jupyter
 	docker push robcurrie/jupyter
-	# Build image for runing on k8s cluster with a GPU
+	# Build image for running on k8s cluster with a GPU
 	docker build -f gpu.Dockerfile -t $(USER)-jupyter-gpu .
 	docker tag $(USER)-jupyter-gpu robcurrie/jupyter-gpu
 	docker push robcurrie/jupyter-gpu
@@ -66,6 +66,17 @@ jupyter:
 		--ip=0.0.0.0 \
 		--NotebookApp.password=$(JUPYTER_PASSWORD)
 
+run-notebook:
+	# Run a notebook on the command line with no timeout inside the local jupyter instance
+	# so it doesn't stop when you close your browser...
+	docker exec -it -e DEBUG=False $(USER)-jupyter \
+		jupyter nbconvert --ExecutePreprocessor.timeout=None --to notebook \
+		--execute $(NOTEBOOK) --output $(notdir $(NOTEBOOK))
+
+
+# Various ceremony to manually run on kubernettes, see job.py for
+# a more elegant approach using jobs
+
 update-secrets:
 	# Update secrets from our AWS file so we can access S3 in k8s
 	kubectl delete secrets/s3-credentials
@@ -99,12 +110,6 @@ shell:
 	# Open a shell on the pod
 	kubectl exec -it $(USER)-pod /bin/bash
 
-run-notebook:
-	# Run a notebook on the command line with no timeout inside the local jupyter instance
-	docker exec -it -e DEBUG=False $(USER)-jupyter \
-		jupyter nbconvert --ExecutePreprocessor.timeout=None --to notebook \
-		--execute $(NOTEBOOK) --output $(notdir $(NOTEBOOK))
-
 run-notebook-on-pod:
 	# Run a long running notebook on the command line inside jupyter
 	# NOTE: You will not see any print() output, converting to .py below
@@ -123,26 +128,3 @@ run-python-on-pod:
 		--output /notebooks/$(notdir $(NOTEBOOK)).py /notebooks/$(notdir $(NOTEBOOK))
 	time kubectl exec -it $(USER)-pod -- bash -c 'cd /notebooks && \
 		python3 $(notdir $(NOTEBOOK)).py 2>&1 | tee log.txt'
-
-create-job:
-	envsubst < job.yml | kubectl create -f -
-
-delete-job:
-	envsubst < job.yml | kubectl delete -f -
-
-log-job:
-	kubectl logs -f job/$(USER)-job
-
-run-notebook-in-job:
-	# Copy the notebook to S3 so the job can pick it up from there
-	aws --profile prp --endpoint https://s3.nautilus.optiputer.net \
-		s3 cp ~/$(NOTEBOOK) s3://braingeneers/$(USER)/$(NOTEBOOK)
-	# Start the job (see job.yml for details on how it runs the notebook)
-	envsubst < job.yml | kubectl create -f -
-	# Wait till its running
-	# kubectl wait --for=condition=complete job/$(USER)-job  --timeout=5m
-
-pull-notebook-back:
-	# Copy the notebook as run on the job back locally - reload in browser to see
-	aws --profile prp --endpoint https://s3.nautilus.optiputer.net \
-		s3 cp s3://braingeneers/$(USER)/$(NOTEBOOK)  ~/$(NOTEBOOK)
