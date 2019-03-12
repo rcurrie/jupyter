@@ -6,6 +6,7 @@ spec:
   containers:
   - name: $USER-container
     image: robcurrie/jupyter-gpu
+    imagePullPolicy: Always
     env:
       - name: USER
         value: $USER

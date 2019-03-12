@@ -93,7 +93,7 @@ if __name__ == '__main__':
         bucket.Object(in_path).upload_file(args.notebook, ExtraArgs={"ACL": "public-read"})
 
         # Load job template and fill in any environment variables
-        with open("job.yml") as f:
+        with open("{}/job.yml".format(os.path.dirname(__file__))) as f:
             body = yaml.load(os.path.expandvars(f.read()))
 
         body["metadata"]["name"] = "{}-{}-{}".format(os.environ["USER"], timestamp, args.notebook)
@@ -143,7 +143,7 @@ if __name__ == '__main__':
                             print(line)
                     except KeyboardInterrupt:
                         print("Quitting")
-                        sys.exit()
+                        break
 
         # Wait until its finished
         elif args.wait:

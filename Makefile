@@ -67,12 +67,18 @@ jupyter:
 		--NotebookApp.password=$(JUPYTER_PASSWORD)
 
 run-notebook:
-	# Run a notebook on the command line with no timeout inside the local jupyter instance
-	# so it doesn't stop when you close your browser...
+	# Run a notebook on the command line with no timeout inside 
+	# the local jupyter instance so it doesn't stop when you close your browser...
+	# Overwrites your notebook when done (so reload...)
 	docker exec -it -e DEBUG=False $(USER)-jupyter \
 		jupyter nbconvert --ExecutePreprocessor.timeout=None --to notebook \
 		--execute $(NOTEBOOK) --output $(notdir $(NOTEBOOK))
 
+clean-jobs:
+	# Delete k8s jobs and all S3 jobs input and output
+	kubectl delete --all jobs --namespace=braingeneers
+	aws --profile prp --endpoint https://s3.nautilus.optiputer.net \
+		s3 rm --recursive s3://braingeneers/$(USER)/jobs
 
 # Various ceremony to manually run on kubernettes, see job.py for
 # a more elegant approach using jobs
