@@ -93,7 +93,7 @@ if __name__ == '__main__':
         bucket.Object(in_path).upload_file(args.notebook, ExtraArgs={"ACL": "public-read"})
 
         # Load job template and fill in any environment variables
-        with open("{}/job.yml".format(os.path.dirname(__file__))) as f:
+        with open(os.path.join(os.path.dirname(__file__), "job.yml")) as f:
             body = yaml.load(os.path.expandvars(f.read()))
 
         body["metadata"]["name"] = "{}-{}-{}".format(os.environ["USER"], timestamp, args.notebook)
@@ -121,29 +121,28 @@ if __name__ == '__main__':
 
         # Create and start the job
         job = batch_api.create_namespaced_job(body=body, namespace=namespace)
-        print("Started job {}".format(job.metadata.name))
+        print("Starting job {}...".format(job.metadata.name))
 
         # Log output
         if args.log:
             w = kubernetes.watch.Watch()
-            for event in w.stream(core_api.list_namespaced_event, namespace=namespace):
-                if (event["raw_object"]["reason"] == "Started"
-                        and job.metadata.name in event["raw_object"]["metadata"]["name"]):
-                    print("Started...")
-                    names = [item.metadata.name
-                             for item in core_api.list_namespaced_pod(namespace).items
-                             if job.metadata.name in item.metadata.name]
+            try:
+                for event in w.stream(core_api.list_namespaced_event, namespace=namespace):
+                    if (event["raw_object"]["reason"] == "Started"
+                            and job.metadata.name in event["raw_object"]["metadata"]["name"]):
+                        print("Started...")
+                        names = [item.metadata.name
+                                 for item in core_api.list_namespaced_pod(namespace).items
+                                 if job.metadata.name in item.metadata.name]
 
-                    # If we try and log immediately the job will not have started enough...
-                    time.sleep(5)
+                        # If we try and log immediately the job will not have started enough...
+                        time.sleep(5)
 
-                    try:
                         for line in core_api.read_namespaced_pod_log(
                                 names[0], namespace, follow=True, _preload_content=False).stream():
                             print(line)
-                    except KeyboardInterrupt:
-                        print("Quitting")
-                        break
+            except KeyboardInterrupt:
+                print("Quitting")
 
         # Wait until its finished
         elif args.wait:

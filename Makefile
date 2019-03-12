@@ -79,6 +79,7 @@ clean-jobs:
 	kubectl delete --all jobs --namespace=braingeneers
 	aws --profile prp --endpoint https://s3.nautilus.optiputer.net \
 		s3 rm --recursive s3://braingeneers/$(USER)/jobs
+	rm -rf jobs/
 
 # Various ceremony to manually run on kubernettes, see job.py for
 # a more elegant approach using jobs
