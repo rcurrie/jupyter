@@ -11,6 +11,7 @@ Requirements:
 import sys
 import os
 import datetime
+import time
 import argparse
 import yaml
 import boto3
@@ -33,6 +34,8 @@ if __name__ == '__main__':
     parser.add_argument("notebook", nargs="?", help="Notebook to run")
     parser.add_argument("-w", "--wait", action="store_true",
                         help="Wait for job to complete")
+    parser.add_argument("-l", "--log", action="store_true",
+                        help="Log output of job")
     args = parser.parse_args()
 
     # Make local jobs directory for output
@@ -99,8 +102,33 @@ if __name__ == '__main__':
         job = batch_api.create_namespaced_job(body=body, namespace=namespace)
         print("Started job {}".format(job.metadata.name))
 
+        # Log output
+        if args.log:
+            w = kubernetes.watch.Watch()
+            for event in w.stream(core_api.list_namespaced_event, namespace=namespace):
+                print(event["raw_object"]["message"])
+                print(event["raw_object"]["reason"])
+                print(event["raw_object"]["involvedObject"]["name"])
+                print(event["raw_object"]["involvedObject"]["uid"])
+                print(event["raw_object"]["metadata"]["uid"])
+                print(event)
+                # continue
+                if (event["raw_object"]["reason"] == "Started"
+                        and job.metadata.name in event["raw_object"]["metadata"]["name"]):
+                    print("Started...")
+                    names = [item.metadata.name
+                             for item in core_api.list_namespaced_pod(namespace).items
+                             if job.metadata.name in item.metadata.name]
+                    print(names)
+
+                    time.sleep(5)
+
+                    for line in core_api.read_namespaced_pod_log(
+                            names[0], namespace, follow=True, _preload_content=False).stream():
+                        print(line)
+
         # Wait until its finished
-        if args.wait:
+        elif args.wait:
             w = kubernetes.watch.Watch()
             for event in w.stream(batch_api.list_namespaced_job, namespace=namespace):
                 if ("completionTime" in event["raw_object"]["status"] and
@@ -114,32 +142,3 @@ if __name__ == '__main__':
     print("Syncing output...")
     sync(bucket)
     sys.exit()
-
-    # for event in w.stream(core_api.list_namespaced_event, namespace=namespace):
-    #     print(event["raw_object"]["message"])
-    #     print(event["raw_object"]["reason"])
-    #     print(event["raw_object"]["involvedObject"]["name"])
-    #     print(event["raw_object"]["involvedObject"]["uid"])
-    #     print(event["raw_object"]["metadata"]["uid"])
-    #     print(event)
-    #     continue
-    #     if (event["raw_object"]["reason"] == "Started"
-    #             and job.metadata.name in event["raw_object"]["metadata"]["name"]):
-    #         print("Started:")
-    #         print(event["raw_object"]["message"])
-    #         print(event["raw_object"]["reason"])
-    #         print(event["raw_object"]["involvedObject"]["name"])
-    #         print(event["raw_object"]["involvedObject"]["uid"])
-    #         print(event["raw_object"]["metadata"]["uid"])
-    #         print(event)
-
-    #         names = [item.metadata.name
-    #                  for item in core_api.list_namespaced_pod(namespace).items
-    #                  if job.metadata.name in item.metadata.name]
-    #         print(names)
-
-    #         time.sleep(5)
-
-    #         for line in core_api.read_namespaced_pod_log(
-    #                 names[0], namespace, follow=True, _preload_content=False).stream():
-    #             print(line)
