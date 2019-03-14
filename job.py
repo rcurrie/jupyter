@@ -121,7 +121,6 @@ if __name__ == '__main__':
 
         # Create and start the job
         job = batch_api.create_namespaced_job(body=body, namespace=namespace)
-        print("Starting job {}...".format(job.metadata.name))
 
         # Log output
         if args.log:
@@ -130,7 +129,7 @@ if __name__ == '__main__':
                 for event in w.stream(core_api.list_namespaced_event, namespace=namespace):
                     if (event["raw_object"]["reason"] == "Started"
                             and job.metadata.name in event["raw_object"]["metadata"]["name"]):
-                        print("Started...")
+                        print("Started on {}...".format(event["raw_object"]["source"]["host"]))
                         names = [item.metadata.name
                                  for item in core_api.list_namespaced_pod(namespace).items
                                  if job.metadata.name in item.metadata.name]
