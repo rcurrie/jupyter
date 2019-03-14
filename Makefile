@@ -51,6 +51,7 @@ jupyter:
 		--user=`id -u`:`id -g` \
 		--network=$(USER)-network \
 		-e DEBUG=True \
+		-e USER=$(USER) \
 		-e AWS_PROFILE="prp" \
 		-e AWS_S3_ENDPOINT="https://s3.nautilus.optiputer.net" \
 		-e S3_ENDPOINT="s3.nautilus.optiputer.net" \
@@ -59,7 +60,7 @@ jupyter:
 		-v `readlink -f ~/.empty`:/home/jovyan/.local \
 		-v `readlink -f ~/data`:/home/jovyan/data \
 		-v /public/groups/braingeneers:/public/groups/braingeneers \
-		--shm-size=64G --memory=128G --cpus="8" \
+		--shm-size=64G --memory=128G --cpus="8" --cpuset-cpus=1-8 \
 		$(USER)-jupyter:latest start-notebook.sh \
 		--NotebookApp.certfile=/home/jovyan/jupyter/ssl/certs/ssl.cert.pem \
 		--NotebookApp.keyfile=/home/jovyan/jupyter/ssl/private/ssl.key.pem \
