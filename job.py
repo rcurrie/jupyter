@@ -32,12 +32,13 @@ import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
-def sync(bucket):
-    """ Sync the output of any jobs to the local jobs folder and delete from S3 """
+def sync(bucket, jobs_path):
+    """ Sync the output of any jobs to the jobs folder and delete from S3 """
     for obj in bucket.objects.filter(Prefix="{}/jobs/out".format(os.environ["USER"])):
-        if not os.path.exists("jobs/{}".format(os.path.basename(obj.key))):
+        if not os.path.exists(("{}/{}".format(jobs_path, os.path.basename(obj.key)))):
             print("Downloading {}".format(obj.key))
-            bucket.Object(obj.key).download_file("jobs/{}".format(os.path.basename(obj.key)))
+            bucket.Object(obj.key).download_file("{}/{}".format(
+                jobs_path, os.path.basename(obj.key)))
         print("Deleting {}".format(obj.key))
         bucket.delete_objects(Delete={'Objects': [{'Key': obj.key}]})
 
@@ -57,16 +58,17 @@ if __name__ == '__main__':
         description="Run a Jupyter notebook in a Kubernetes cluster")
     parser.add_argument("notebook", nargs="?", help="Notebook to run")
     parser.add_argument("-n", "--namespace", required=True,
-                        help="k8s namespace and bucket name")
+                        help="Kubernetes namespace to run jobs")
     parser.add_argument("-w", "--wait", action="store_true",
                         help="Wait for job to complete")
     parser.add_argument("-l", "--log", action="store_true",
                         help="Log output of job")
     args = parser.parse_args()
 
-    # Make local jobs directory for output
-    if not os.path.exists("jobs"):
-        os.makedirs("jobs")
+    # Make jobs directory in the users home directory
+    jobs_path = os.path.expanduser("~/jobs")
+    if not os.path.exists(jobs_path):
+        os.makedirs(jobs_path)
 
     # Common timestamp to use for job name and files
     timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -129,10 +131,11 @@ if __name__ == '__main__':
                 for event in w.stream(core_api.list_namespaced_event, namespace=namespace):
                     if (event["raw_object"]["reason"] == "Started"
                             and job.metadata.name in event["raw_object"]["metadata"]["name"]):
-                        print("Started on {}...".format(event["raw_object"]["source"]["host"]))
                         names = [item.metadata.name
                                  for item in core_api.list_namespaced_pod(namespace).items
                                  if job.metadata.name in item.metadata.name]
+                        print("Started as {} on {}".format(
+                            event["raw_object"]["source"]["host"], names[0]))
 
                         # If we try and log immediately the job will not have started enough...
                         time.sleep(5)
@@ -149,5 +152,5 @@ if __name__ == '__main__':
 
     # Copy any output back and cleanup
     print("Syncing output...")
-    sync(bucket)
+    sync(bucket, jobs_path)
     sys.exit()
