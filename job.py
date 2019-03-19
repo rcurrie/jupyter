@@ -59,6 +59,8 @@ if __name__ == '__main__':
     parser.add_argument("notebook", nargs="?", help="Notebook to run")
     parser.add_argument("-n", "--namespace", required=True,
                         help="Kubernetes namespace to run jobs")
+    parser.add_argument("-b", "--bucket", required=True,
+                        help="S3 bucket to store notebooks")
     parser.add_argument("-w", "--wait", action="store_true",
                         help="Wait for job to complete")
     parser.add_argument("-l", "--log", action="store_true",
@@ -84,26 +86,30 @@ if __name__ == '__main__':
     # Connect to S3
     session = boto3.session.Session(profile_name="prp")
     bucket = session.resource(
-        "s3", endpoint_url="https://s3.nautilus.optiputer.net").Bucket(args.namespace)
+        "s3", endpoint_url="https://s3.nautilus.optiputer.net").Bucket(args.bucket)
 
     # If a notebook is specified copy to S3 and start a job
     if args.notebook:
         assert args.notebook.endswith(".ipynb")
 
-        in_path = "{}/jobs/in/{}-{}".format(os.environ["USER"], timestamp, args.notebook)
-        out_path = "{}/jobs/out/{}-{}".format(os.environ["USER"], timestamp, args.notebook)
-        bucket.Object(in_path).upload_file(args.notebook, ExtraArgs={"ACL": "public-read"})
+        notebook_path = os.path.abspath(args.notebook)
+        notebook_name = os.path.basename(args.notebook)
+
+        in_path = "{}/jobs/in/{}-{}".format(os.environ["USER"], timestamp, notebook_name)
+        out_path = "{}/jobs/out/{}-{}".format(os.environ["USER"], timestamp, notebook_name)
+        bucket.Object(in_path).upload_file(notebook_path, ExtraArgs={"ACL": "public-read"})
 
         # Load job template and fill in any environment variables
+        # REMIND: Bake into this file so we're self sufficient? Or Dockerize?
         with open(os.path.join(os.path.dirname(__file__), "job.yml")) as f:
             body = yaml.load(os.path.expandvars(f.read()))
 
-        body["metadata"]["name"] = "{}-{}-{}".format(os.environ["USER"], timestamp, args.notebook)
+        body["metadata"]["name"] = "{}-{}-{}".format(os.environ["USER"], timestamp, notebook_name)
 
         body["metadata"]["labels"] = {
             "user": os.environ["USER"],
             "timestamp": timestamp,
-            "notebook": args.notebook}
+            "notebook": notebook_name}
 
         # Fill in script to copy notebook down, run, and copy back
         body["spec"]["template"]["spec"]["containers"][0]["args"] = ["""
@@ -119,10 +125,11 @@ if __name__ == '__main__':
           echo 'Deleting input notebook from S3...' &&
           aws --endpoint http://rook-ceph-rgw-rooks3.rook s3 rm s3://{4}/{1} &&
           echo 'Finished.'
-        """.format(args.notebook, in_path, out_path, os.environ["USER"], args.namespace)]
+        """.format(notebook_name, in_path, out_path, os.environ["USER"], args.namespace)]
 
         # Create and start the job
         job = batch_api.create_namespaced_job(body=body, namespace=namespace)
+        print("Created job")
 
         # Log output
         if args.log:
