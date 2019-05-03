@@ -49,7 +49,6 @@ jupyter:
 	# access to S3
 	docker run --rm -it --name $(USER)-jupyter \
 		--user=`id -u`:`id -g` \
-		--network=$(USER)-network \
 		-e DEBUG=True \
 		-e USER=$(USER) \
 		-e AWS_PROFILE="prp" \

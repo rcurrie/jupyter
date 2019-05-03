@@ -8,6 +8,13 @@ until it has finished or printing is log output to the console
 
 Copies the executed notebook back from S3 to ./jobs/
 
+Example:
+python2 job.py -n braingeneers -b braingeneers -w -l ~/path/to/notebook.ipynb
+
+Spins up a notebook in the k8s braingeneers namespace using the PRP S3
+bucket braingeneers for results. It waits till it completes and shows
+any output on the console.
+
 Notes:
     Requires python2.7 to work with PRP due to OID issues:
     See https://github.com/kubernetes-client/python/issues/525
