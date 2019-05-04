@@ -1,8 +1,12 @@
-FROM jupyter/tensorflow-notebook:7f1482f5a136
+FROM tensorflow/tensorflow:2.0.0a0-py3-jupyter
 
-# # Match tensorflow in image we run on k8s PRP
-# RUN pip uninstall -y keras
-# RUN pip install --no-cache-dir tensorflow==1.13.1
+# Tensorflow dockers do not contain git which we use for
+# installing python packages directly from github via pip
+RUN apt-get update && apt-get install -y --no-install-recommends \
+  git wget
 
 ADD requirements.txt /requirements.txt
 RUN pip install --no-cache-dir -r /requirements.txt
+
+RUN pip install --force-reinstall \
+  http://public.gi.ucsc.edu/~rcurrie/tensorflow-2.0.0a0-cp35-cp35m-linux_x86_64.whl

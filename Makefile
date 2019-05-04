@@ -1,9 +1,9 @@
 build:
-	# Build image for local jupyter server w/o GPU
+	# Build image for local jupyter server w/o GPU and push
 	docker build -f cpu.Dockerfile -t $(USER)-jupyter .
 	docker tag $(USER)-jupyter robcurrie/jupyter
 	docker push robcurrie/jupyter
-	# Build image for running on k8s cluster with a GPU
+	# Build image for on k8s cluster with a GPU and push
 	docker build -f gpu.Dockerfile -t $(USER)-jupyter-gpu .
 	docker tag $(USER)-jupyter-gpu robcurrie/jupyter-gpu
 	docker push robcurrie/jupyter-gpu
@@ -55,14 +55,14 @@ jupyter:
 		-e AWS_S3_ENDPOINT="https://s3.nautilus.optiputer.net" \
 		-e S3_ENDPOINT="s3.nautilus.optiputer.net" \
 		-p 52820:8888 \
-		-v `readlink -f ~`:/home/jovyan \
-		-v `readlink -f ~/.empty`:/home/jovyan/.local \
-		-v `readlink -f ~/data`:/home/jovyan/data \
+		-v `readlink -f ~`:/tf \
+		-v `readlink -f ~/.empty`:/tf/.local \
+		-v `readlink -f ~/data`:/tf/data \
 		-v /public/groups/braingeneers:/public/groups/braingeneers \
 		--shm-size=64G --memory=128G --cpus="8" --cpuset-cpus=1-8 \
-		$(USER)-jupyter:latest start-notebook.sh \
-		--NotebookApp.certfile=/home/jovyan/jupyter/ssl/certs/ssl.cert.pem \
-		--NotebookApp.keyfile=/home/jovyan/jupyter/ssl/private/ssl.key.pem \
+		$(USER)-jupyter:latest jupyter notebook \
+		--NotebookApp.certfile=/tf/jupyter/ssl/certs/ssl.cert.pem \
+		--NotebookApp.keyfile=/tf/jupyter/ssl/private/ssl.key.pem \
 		--ip=0.0.0.0 \
 		--NotebookApp.password=$(JUPYTER_PASSWORD)
 
