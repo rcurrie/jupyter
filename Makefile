@@ -7,10 +7,13 @@ build:
 	# Build image for local jupyter server w/o GPU and push
 	docker build -f cpu.Dockerfile -t $(USER)-jupyter .
 	docker tag $(USER)-jupyter $(DOCKERHUB_ACCOUNT)/jupyter
-	docker push $(DOCKERHUB_ACCOUNT)/jupyter
 	# Build image for on k8s cluster with a GPU and push
 	docker build -f gpu.Dockerfile -t $(USER)-jupyter-gpu .
 	docker tag $(USER)-jupyter-gpu $(DOCKERHUB_ACCOUNT)/jupyter-gpu
+
+push:
+	# Push our containers to dockerhub for running in k8s
+	docker push $(DOCKERHUB_ACCOUNT)/jupyter
 	docker push $(DOCKERHUB_ACCOUNT)/jupyter-gpu
 
 generate-ca:
