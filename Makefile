@@ -1,12 +1,17 @@
+# Override these to for you're own use via:
+# JUPYTER_PORT=1234 make jupyter
+JUPYTER_PORT ?= 52820
+DOCKERHUB_ACCOUNT ?= "robcurrie"
+
 build:
 	# Build image for local jupyter server w/o GPU and push
 	docker build -f cpu.Dockerfile -t $(USER)-jupyter .
-	docker tag $(USER)-jupyter robcurrie/jupyter
-	docker push robcurrie/jupyter
+	docker tag $(USER)-jupyter $(DOCKERHUB_ACCOUNT)/jupyter
+	docker push $(DOCKERHUB_ACCOUNT)/jupyter
 	# Build image for on k8s cluster with a GPU and push
 	docker build -f gpu.Dockerfile -t $(USER)-jupyter-gpu .
-	docker tag $(USER)-jupyter-gpu robcurrie/jupyter-gpu
-	docker push robcurrie/jupyter-gpu
+	docker tag $(USER)-jupyter-gpu $(DOCKERHUB_ACCOUNT)/jupyter-gpu
+	docker push $(DOCKERHUB_ACCOUNT)/jupyter-gpu
 
 generate-ca:
 	# See https://juno.sh/ssl-self-signed-cert/
@@ -51,10 +56,11 @@ jupyter:
 		--user=`id -u`:`id -g` \
 		-e DEBUG=True \
 		-e USER=$(USER) \
+		-e HOME=/tf \
 		-e AWS_PROFILE="prp" \
 		-e AWS_S3_ENDPOINT="https://s3.nautilus.optiputer.net" \
 		-e S3_ENDPOINT="s3.nautilus.optiputer.net" \
-		-p 52820:8888 \
+		-p $(JUPYTER_PORT):8888 \
 		-v `readlink -f ~`:/tf \
 		-v `readlink -f ~/.empty`:/tf/.local \
 		-v `readlink -f ~/data`:/tf/data \
