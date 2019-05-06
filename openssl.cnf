@@ -68,11 +68,11 @@ emailAddress                    = Email Address
 # Optionally, specify some defaults.
 countryName_default             = US
 stateOrProvinceName_default     = California
-localityName_default            = Santa Cruz
-0.organizationName_default      = Rob Currie
-organizationalUnitName_default  = Rob Currie
+localityName_default            = Silicon Valley
+0.organizationName_default      = John Smith
+organizationalUnitName_default  = John Smith
 commonName_default				= Jupyter Notebook
-emailAddress_default            = rcurrie@ucsc.edu
+emailAddress_default            = john@smith.org
 
 [ v3_ca ]
 # Extensions for a typical CA (`man x509v3_config`).
