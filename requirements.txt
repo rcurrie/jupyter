@@ -6,8 +6,10 @@ numpy
 pandas
 requests
 scikit-learn
+scikit-image
 scipy
 seaborn
 shap
 sklearn
 tables
+torchvision
