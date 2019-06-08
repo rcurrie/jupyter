@@ -68,12 +68,17 @@ jupyter:
 		-v `readlink -f ~/.empty`:/tf/.local \
 		-v `readlink -f ~/data`:/tf/data \
 		-v /public/groups/braingeneers:/public/groups/braingeneers \
+		-v /public/groups/brcaexchange:/public/groups/brcaexchange \
 		--shm-size=64G --memory=128G --cpus="8" --cpuset-cpus=1-8 \
 		$(USER)-jupyter:latest jupyter notebook \
 		--NotebookApp.certfile=/tf/jupyter/ssl/certs/ssl.cert.pem \
 		--NotebookApp.keyfile=/tf/jupyter/ssl/private/ssl.key.pem \
 		--ip=0.0.0.0 \
 		--NotebookApp.password=$(JUPYTER_PASSWORD)
+
+shell:
+	# Shell into the jupyter notebook server
+	docker exec -it $(USER)-jupyter /bin/bash
 
 run-notebook:
 	# Run a notebook on the command line with no timeout inside 
@@ -122,7 +127,7 @@ monitor:
 	# Run nvidia monitor in a loop to monitor GPU usage
 	kubectl exec -it $(USER)-pod -- nvidia-smi --loop=5
 
-shell:
+shell-pod:
 	# Open a shell on the pod
 	kubectl exec -it $(USER)-pod /bin/bash
 
