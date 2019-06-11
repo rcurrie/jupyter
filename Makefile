@@ -89,8 +89,9 @@ run-notebook:
 		--execute $(NOTEBOOK) --output $(notdir $(NOTEBOOK))
 
 clean-jobs:
-	# Delete k8s jobs and all S3 jobs input and output
-	kubectl delete --all jobs --namespace=braingeneers
+	# Delete k8s jobs and all PRP S3 jobs input and output
+	kubectl get jobs -o custom-columns=:.metadata.name --namespace=braingeneers \
+		| grep '^$(USER)*' | xargs kubectl delete jobs
 	aws --profile prp --endpoint https://s3.nautilus.optiputer.net \
 		s3 rm --recursive s3://braingeneers/$(USER)/jobs
 	rm -rf jobs/
