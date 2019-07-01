@@ -69,7 +69,7 @@ jupyter:
 		-v `readlink -f ~/data`:/tf/data \
 		-v /public/groups/braingeneers:/public/groups/braingeneers \
 		-v /public/groups/brcaexchange:/public/groups/brcaexchange \
-		--shm-size=64G --memory=128G --cpus="8" --cpuset-cpus=1-8 \
+		--shm-size=64G --memory=128G --cpus="16" --cpuset-cpus=1-16 \
 		$(USER)-jupyter:latest jupyter notebook \
 		--NotebookApp.certfile=/tf/jupyter/ssl/certs/ssl.cert.pem \
 		--NotebookApp.keyfile=/tf/jupyter/ssl/private/ssl.key.pem \
@@ -81,12 +81,9 @@ shell:
 	docker exec -it $(USER)-jupyter /bin/bash
 
 run-notebook:
-	# Run a notebook on the command line with no timeout inside 
-	# the local jupyter instance so it doesn't stop when you close your browser...
-	# Overwrites your notebook when done (so reload...)
 	docker exec -it -e DEBUG=False $(USER)-jupyter \
 		jupyter nbconvert --ExecutePreprocessor.timeout=None --to notebook \
-		--execute $(NOTEBOOK) --output $(notdir $(NOTEBOOK))
+		--execute $(NOTEBOOK) --output /tf/jobs/`date "+%Y%m%d-%H%M%S"`-$(notdir $(NOTEBOOK))
 
 clean-jobs:
 	# Delete k8s jobs and all PRP S3 jobs input and output
