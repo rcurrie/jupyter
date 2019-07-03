@@ -1,28 +1,20 @@
 """
-Run a jupyter notebook in a kubernettes job
-
-Copies the notebook into S3
-
-Runs the notebook in a kubernetes job optionally waiting
-until it has finished or printing is log output to the console
-
-Copies the executed notebook back from S3 to ./jobs/
+Run a jupyter notebook in a kubernettes job and copy back to ~/jobs
 
 Example:
-python2 job.py -n braingeneers -b braingeneers -w -l ~/path/to/notebook.ipynb
+python3 job.py -n braingeneers -b braingeneers -w -l ~/path/to/notebook.ipynb
 
-Spins up a notebook in the k8s braingeneers namespace using the PRP S3
-bucket braingeneers for results. It waits till it completes and shows
-any output on the console.
+Details
+- Copy the notebook to S3
+- Launch a k8s job that runs the notebook via nbconvert sending logging back to the local console
+- Copy the executed notebook back to S3
+- Copy the executed notebook from S3 to ~/jobs with a timestamp
 
 Notes:
-    Requires python2.7 to work with PRP due to OID issues:
-    See https://github.com/kubernetes-client/python/issues/525
-
     Notebooks are time stamped so you can run multiple versions
 
 Requirements:
-    pip2 install --user --upgrade kubernetes boto3
+    pip3 install --user --upgrade kubernetes>=10.0.0 boto3
 """
 import sys
 import os
