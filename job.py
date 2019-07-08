@@ -103,7 +103,10 @@ if __name__ == '__main__':
         with open(os.path.join(os.path.dirname(__file__), "job.yml")) as f:
             body = yaml.load(os.path.expandvars(f.read()))
 
-        body["metadata"]["name"] = "{}-{}-{}".format(os.environ["USER"], timestamp, notebook_name)
+        # k8s will use the job name in URLs and therefoe we need all lower and no _
+        # DNS-1123 subdomain must consist of lower case alphanumeric characters, '-' or '.'
+        body["metadata"]["name"] = "{}-{}-{}".format(
+            os.environ["USER"], timestamp, notebook_name.lower().replace("_", "-"))
 
         body["metadata"]["labels"] = {
             "user": os.environ["USER"],

@@ -1,5 +1,11 @@
+# Various snippets and ceremony to run a Jupyter notebook server
+# with a custom docker and then run notebooks with on the command
+# line in this docker so they can run for a long time or run
+# them in a k8s cluster using pods or jobs
+
+
 # Override these to for you're own use via:
-# JUPYTER_PORT=1234 make jupyter
+# JUPYTER_PORT=1234 make jupyter etc...
 JUPYTER_PORT ?= 52820
 DOCKERHUB_ACCOUNT ?= "robcurrie"
 
@@ -77,39 +83,49 @@ jupyter:
 		--NotebookApp.password=$(JUPYTER_PASSWORD)
 
 shell:
-	# Shell into the jupyter notebook server
+	# Shell into the jupyter notebook server container
 	docker exec -it $(USER)-jupyter /bin/bash
 
 run-notebook:
+	# Run the notebook on the command line in the container and put the result in ~/jobs
+	# Same workflow as jobs.py so you can run a long notebook locally or in the cluster
+	# and have the same time stamped version show up in ~/jobs
 	docker exec -it -e DEBUG=False $(USER)-jupyter \
 		jupyter nbconvert --ExecutePreprocessor.timeout=None --to notebook \
 		--execute $(NOTEBOOK) --output /tf/jobs/`date "+%Y%m%d-%H%M%S"`-$(notdir $(NOTEBOOK))
 
+# Kubernetes
+# Snippets to run notebook on k8s via pods or, better, jobs...
+
+update-secrets:
+	# Update secrets from our AWS file so we can access S3 in k8s
+	kubectl delete secrets/$(USER)-aws-credentials
+	kubectl create secret generic $(USER)-aws-credentials --from-file=../.aws/credentials
+
+list-pods:
+	# List all pods and jobs
+	kubectl get pods
+
 clean-jobs:
-	# Delete k8s jobs and all PRP S3 jobs input and output
+	# Delete k8s jobs prefixed with USERNAME and all PRP S3 jobs input and output
 	kubectl get jobs -o custom-columns=:.metadata.name --namespace=braingeneers \
 		| grep '^$(USER)*' | xargs kubectl delete jobs
 	aws --profile prp --endpoint https://s3.nautilus.optiputer.net \
 		s3 rm --recursive s3://braingeneers/$(USER)/jobs
 	rm -rf jobs/
 
-# Various ceremony to manually run on kubernettes, see job.py for
-# a more elegant approach using jobs
-
-update-secrets:
-	# Update secrets from our AWS file so we can access S3 in k8s
-	kubectl delete secrets/s3-credentials
-	kubectl create secret generic s3-credentials --from-file=../.aws/credentials
-
-run: create-pod run-python-on-pod delete-pod
-
-list-pods:
-	# List all pods
-	kubectl get pods
-
-describe-pod:
-	# Describe an allocated and running pod ie where is it...
-	kubectl describe pod/$(USER)-pod
+# Various ceremony to manually run on kubernettes by spinning
+# up a pod, shell in, run, and spin it down. This approximates
+# spinning up a virtual machine on EC2, Openstack etc... and
+# is nice for debugging
+#
+# BUT
+#
+# Please see job.py for a more elegant way to run a notebook
+# in a k8s job with the results magically back in your ~/jobs folder
+# timestamped so you can tweak hyperparametes per job and have them
+# all show up with graphics rendered without using resources/GPUs anymore
+# then you need to
 
 create-pod:
 	# Create a pod 

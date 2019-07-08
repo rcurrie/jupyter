@@ -32,16 +32,16 @@ spec:
         resources:
           requests:
             cpu: "8"
-            memory: "8Gi"
+            memory: "16Gi"
             nvidia.com/gpu: 0
           limits:
-            cpu: "8"
-            memory: "8Gi"
+            cpu: "16"
+            memory: "32Gi"
             nvidia.com/gpu: 0
         command: ["/bin/bash", "-c"]
         args: [ ]
       restartPolicy: Never
       volumes:
-      - name: credentials
-        secret:
-          secretName: s3-credentials
+        - name: credentials
+          secret:
+            secretName: $USER-aws-credentials
