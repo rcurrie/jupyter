@@ -24,13 +24,15 @@ spec:
         name: credentials
     resources:
       requests:
-        memory: "16Gi"
+        memory: 8Gi
+        hugepages-2Mi: 2Mi
         nvidia.com/gpu: 0
       limits:
-        memory: "16Gi"
+        memory: 8Gi
+        hugepages-2Mi: 2Mi
         nvidia.com/gpu: 0
   restartPolicy: Never
   volumes:
   - name: credentials
     secret:
-      secretName: s3-credentials
+      secretName: $USER-aws-credentials
