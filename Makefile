@@ -163,3 +163,17 @@ run-python-on-pod:
 		--output /notebooks/$(notdir $(NOTEBOOK)).py /notebooks/$(notdir $(NOTEBOOK))
 	time kubectl exec -it $(USER)-pod -- bash -c 'cd /notebooks && \
 		python3 $(notdir $(NOTEBOOK)).py 2>&1 | tee log.txt'
+
+# Virtualenv
+create-env:
+	python3 -m venv ./env
+
+install-env:
+	# brew install cmake openmpi
+	pip install --upgrade pip
+	pip install -r requirements.txt
+	# In docker base image so not in requirements.txt
+	pip install jupyter tensorflow==2.0.0-beta1 tensorboard
+
+jupyter-env:
+	jupyter notebook --notebook-dir=~/

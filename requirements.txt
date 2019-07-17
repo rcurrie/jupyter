@@ -13,3 +13,6 @@ shap
 sklearn
 tables
 torchvision
+sklearn
+gym
+stable-baselines
