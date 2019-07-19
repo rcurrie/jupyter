@@ -176,4 +176,4 @@ install-env:
 	pip install jupyter tensorflow==2.0.0-beta1 tensorboard
 
 jupyter-env:
-	jupyter notebook --notebook-dir=~/
+	DEBUG=True jupyter notebook --notebook-dir=~/
