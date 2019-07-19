@@ -11,15 +11,15 @@ DOCKERHUB_ACCOUNT ?= "robcurrie"
 
 build:
 	# Build image for local jupyter server w/o GPU and push
-	docker build -f cpu.Dockerfile -t $(USER)-jupyter .
-	docker tag $(USER)-jupyter $(DOCKERHUB_ACCOUNT)/jupyter
+	docker build -f cpu.Dockerfile -t $(USER)-jupyter-cpu .
+	docker tag $(USER)-jupyter-cpu $(DOCKERHUB_ACCOUNT)/jupyter-cpu
 	# Build image for on k8s cluster with a GPU and push
 	docker build -f gpu.Dockerfile -t $(USER)-jupyter-gpu .
 	docker tag $(USER)-jupyter-gpu $(DOCKERHUB_ACCOUNT)/jupyter-gpu
 
 push:
 	# Push our containers to dockerhub for running in k8s
-	docker push $(DOCKERHUB_ACCOUNT)/jupyter
+	docker push $(DOCKERHUB_ACCOUNT)/jupyter-cpu
 	docker push $(DOCKERHUB_ACCOUNT)/jupyter-gpu
 
 generate-ca:
@@ -76,7 +76,7 @@ jupyter:
 		-v /public/groups/braingeneers:/public/groups/braingeneers \
 		-v /public/groups/brcaexchange:/public/groups/brcaexchange \
 		--shm-size=64G --memory=128G --cpus="16" --cpuset-cpus=1-16 \
-		$(USER)-jupyter:latest jupyter notebook \
+		$(USER)-jupyter-cpu:latest jupyter notebook \
 		--NotebookApp.certfile=/tf/jupyter/ssl/certs/ssl.cert.pem \
 		--NotebookApp.keyfile=/tf/jupyter/ssl/private/ssl.key.pem \
 		--ip=0.0.0.0 \
@@ -164,7 +164,7 @@ run-python-on-pod:
 	time kubectl exec -it $(USER)-pod -- bash -c 'cd /notebooks && \
 		python3 $(notdir $(NOTEBOOK)).py 2>&1 | tee log.txt'
 
-# Virtualenv
+# Virtualenv for airplane hacking on a mac laptop...
 create-env:
 	python3 -m venv ./env
 
