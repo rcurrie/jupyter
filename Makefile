@@ -100,7 +100,7 @@ run-notebook:
 update-secrets:
 	# Update secrets from our AWS file so we can access S3 in k8s
 	kubectl delete secrets/$(USER)-aws-credentials
-	kubectl create secret generic $(USER)-aws-credentials --from-file=../.aws/credentials
+	# kubectl create secret generic $(USER)-aws-credentials --from-file=../.aws/credentials
 
 list-pods:
 	# List all pods and jobs

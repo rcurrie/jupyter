@@ -31,12 +31,12 @@ spec:
             name: credentials
         resources:
           requests:
-            cpu: "8"
-            memory: "16Gi"
+            cpu: "2"
+            memory: "8Gi"
             nvidia.com/gpu: 0
           limits:
-            cpu: "16"
-            memory: "32Gi"
+            cpu: "2"
+            memory: "8Gi"
             nvidia.com/gpu: 0
         command: ["/bin/bash", "-c"]
         args: [ ]

@@ -4,8 +4,7 @@ FROM tensorflow/tensorflow:2.0.0b0-py3-jupyter
 # installing python packages directly from github via pip
 RUN apt-get update && apt-get install -y --no-install-recommends \
   git wget \
-  rm -rf /var/lib/apt/lists/*
-
+  && rm -rf /var/lib/apt/lists/*
 
 RUN pip install --upgrade pip
 
