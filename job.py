@@ -15,6 +15,9 @@ Notes:
 
 Requirements:
     pip3 install --user --upgrade kubernetes>=10.0.0 boto3
+
+References:
+    https://blog.pythian.com/how-to-create-kubernetes-jobs-with-python/
 """
 import sys
 import os

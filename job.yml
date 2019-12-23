@@ -18,8 +18,8 @@ spec:
         env:
           - name: USER
             value: $USER
-          - name: AWS_PROFILE
-            value: "prp"
+          # - name: AWS_PROFILE
+          #   value: "prp"
           - name: AWS_S3_ENDPOINT
             value: "http://rook-ceph-rgw-rooks3.rook"
           - name: S3_ENDPOINT
@@ -28,20 +28,20 @@ spec:
             value: "0"
         volumeMounts:
           - mountPath: /root/.aws
-            name: credentials
+            name: s3-credentials
         resources:
           requests:
-            cpu: "2"
+            cpu: "1"
             memory: "8Gi"
             nvidia.com/gpu: 0
           limits:
-            cpu: "2"
+            cpu: "1"
             memory: "8Gi"
             nvidia.com/gpu: 0
         command: ["/bin/bash", "-c"]
         args: [ ]
       restartPolicy: Never
       volumes:
-        - name: credentials
+        - name: s3-credentials
           secret:
-            secretName: $USER-aws-credentials
+            secretName: prp-s3-credentials
